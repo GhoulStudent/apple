@@ -1,0 +1,267 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row my-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tachometer-alt me-2"></i>Your Dashboard</h2>
+                <a href="{{ url_for('index') }}" class="btn btn-success">
+                    <i class="fas fa-camera me-2"></i>New Scan
+                </a>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- User Stats Summary -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-primary text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Total Scans</h5>
+                                    <h2 class="display-4">{{ scans|length }}</h2>
+                                </div>
+                                <i class="fas fa-camera-retro fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-success text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Healthy Plants</h5>
+                                    <h2 class="display-4">{{ scans|selectattr('disease', 'equalto', 'healthy')|list|length }}</h2>
+                                </div>
+                                <i class="fas fa-heart fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-warning text-dark h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title">Identified Issues</h5>
+                                    <h2 class="display-4">{{ scans|rejectattr('disease', 'equalto', 'healthy')|list|length }}</h2>
+                                </div>
+                                <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="my-0 text-light"><i class="fas fa-history me-2"></i>Recent Activity</h4>
+                        <span class="badge bg-primary">{{ scans|length }} total scans</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if scans %}
+                        <div class="list-group list-group-flush">
+                            {% for scan in scans[:3] %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        {% if scan.image_url %}
+                                        <div class="me-3">
+                                            <img src="{{ scan.image_url }}" alt="Scan image" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                                        </div>
+                                        {% else %}
+                                        <div class="me-3 bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                            <i class="fas fa-image fa-2x text-light"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <h5 class="mb-1">
+                                                {% if scan.disease == 'healthy' %}
+                                                <span class="badge bg-success">Healthy</span>
+                                                {% else %}
+                                                <span class="badge bg-warning text-dark">{{ scan.disease|title }}</span>
+                                                {% endif %}
+                                                <small class="text-muted ms-2">{{ scan.scanned_at.strftime('%b %d, %Y') }}</small>
+                                            </h5>
+                                            <p class="mb-1">Confidence: 
+                                                <span class="badge 
+                                                    {% if scan.confidence > 0.7 %}
+                                                    bg-success
+                                                    {% elif scan.confidence > 0.4 %}
+                                                    bg-warning
+                                                    {% else %}
+                                                    bg-danger
+                                                    {% endif %}">
+                                                    {{ (scan.confidence * 100)|int }}%
+                                                </span>
+                                            </p>
+                                            <small class="text-muted">{{ scan.scanned_at.strftime('%H:%M') }}</small>
+                                        </div>
+                                    </div>
+                                    <a href="{{ url_for('scan_details', scan_id=scan.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye me-1"></i> View Details
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if scans|length > 3 %}
+                        <div class="card-footer text-center bg-light">
+                            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#allScansCollapse" aria-expanded="false">
+                                Show all {{ scans|length }} scans <i class="fas fa-chevron-down ms-1"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info m-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-info-circle fa-3x"></i>
+                                </div>
+                                <div>
+                                    <h5>No Scans Found</h5>
+                                    <p class="mb-0">You don't have any scans yet. Get started by taking a photo of an apple plant to check its health.</p>
+                                    <a href="{{ url_for('index') }}" class="btn btn-primary mt-2">
+                                        <i class="fas fa-camera me-2"></i>Scan Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- All Scans Table (Collapsed by default if there are more than 3 scans) -->
+            {% if scans and scans|length > 3 %}
+            <div class="collapse" id="allScansCollapse">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="my-0"><i class="fas fa-history me-2"></i>All Scan History</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Image</th>
+                                        <th>Disease</th>
+                                        <th>Confidence</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for scan in scans %}
+                                    <tr>
+                                        <td>{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            {% if scan.image_url %}
+                                            <img src="{{ scan.image_url }}" alt="Scan image" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                                            {% else %}
+                                            <span class="text-muted">No image</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if scan.disease == 'healthy' %}
+                                            <span class="badge bg-success">{{ scan.disease }}</span>
+                                            {% else %}
+                                            <span class="badge bg-warning text-dark">{{ scan.disease }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar 
+                                                    {% if scan.confidence > 0.7 %}
+                                                    bg-success
+                                                    {% elif scan.confidence > 0.4 %}
+                                                    bg-warning
+                                                    {% else %}
+                                                    bg-danger
+                                                    {% endif %}"
+                                                    role="progressbar" 
+                                                    style="width: {{ (scan.confidence * 100)|int }}%" 
+                                                    aria-valuenow="{{ (scan.confidence * 100)|int }}" 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100">
+                                                    {{ (scan.confidence * 100)|int }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('scan_details', scan_id=scan.id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> Details
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Tips Section -->
+            <div class="card mt-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h4 class="my-0"><i class="fas fa-lightbulb me-2"></i>Plant Health Tips</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-tint me-2 text-primary"></i>Watering</h5>
+                                    <p class="card-text">Consistent watering is crucial for apple trees. Water deeply but infrequently to encourage deep root growth.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-cut me-2 text-danger"></i>Pruning</h5>
+                                    <p class="card-text">Regular pruning improves air circulation and sunlight penetration, reducing disease risks.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-seedling me-2 text-success"></i>Fertilizing</h5>
+                                    <p class="card-text">Apply balanced fertilizer in early spring before bud break for optimal growth and fruit production.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add any dashboard-specific JavaScript here
+    document.addEventListener('DOMContentLoaded', function() {
+        // Example: Initialize tooltips if needed
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

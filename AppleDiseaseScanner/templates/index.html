@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+<link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        {% if not current_user.is_authenticated %}
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle me-2"></i> 
+            <a href="{{ url_for('login') }}" class="alert-link">Login</a> or 
+            <a href="{{ url_for('register') }}" class="alert-link">Register</a> 
+            to save your scan history and track disease progression over time.
+        </div>
+        {% endif %}
+        
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="my-0"><i class="fas fa-camera me-2"></i>Upload or Take a Photo of Apple Leaf/Fruit</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> Take a clear photo of an apple leaf or fruit to detect potential diseases.
+                    {% if current_user.is_authenticated %}
+                    <span class="badge bg-success">Your results will be saved!</span>
+                    {% else %}
+                    <span class="text-muted">(Create an account to save your scan history)</span>
+                    {% endif %}
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <button id="cameraButton" class="btn btn-secondary w-100">
+                            <i class="fas fa-camera me-2"></i>Take Photo
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="imageUpload" accept="image/*">
+                            <button class="btn btn-secondary" type="button" id="uploadButton">
+                                <i class="fas fa-upload me-1"></i>Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Camera view (hidden by default) -->
+                <div id="cameraView" class="text-center d-none mb-3">
+                    <video id="video" class="img-fluid rounded" autoplay></video>
+                    <div class="mt-2">
+                        <button id="captureButton" class="btn btn-primary me-2">
+                            <i class="fas fa-camera me-1"></i>Capture
+                        </button>
+                        <button id="closeCamera" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Image preview -->
+                <div id="imagePreview" class="text-center mb-3 d-none">
+                    <canvas id="canvas" class="img-fluid rounded border"></canvas>
+                    <div id="previewButtons" class="mt-2">
+                        <button id="processButton" class="btn btn-primary me-2">
+                            <i class="fas fa-check me-1"></i>Process Image
+                        </button>
+                        <button id="clearButton" class="btn btn-secondary">
+                            <i class="fas fa-trash me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Loading indicator -->
+                <div id="loadingIndicator" class="text-center d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing image...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results section (hidden by default) -->
+        <div id="resultsSection" class="card mb-4 shadow-sm d-none">
+            <div class="card-header bg-primary text-white">
+                <h4 class="my-0"><i class="fas fa-clipboard-check me-2"></i>Detection Results</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h5 id="diseaseTitle">-</h5>
+                        <div class="progress mb-3">
+                            <div id="confidenceBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        
+                        <div class="alert" id="diseaseDescription">
+                            <!-- Disease description will be inserted here -->
+                        </div>
+                        
+                        <h5><i class="fas fa-prescription-bottle-medical me-2"></i>Treatment</h5>
+                        <div class="alert alert-success" id="diseaseTreatment">
+                            <!-- Treatment info will be inserted here -->
+                        </div>
+                        
+                        <button id="newAnalysisButton" class="btn btn-primary mt-2">
+                            <i class="fas fa-arrow-left me-1"></i>Analyze Another Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Information section about common apple diseases -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="my-0"><i class="fas fa-info-circle me-2"></i>About Apple Diseases</h4>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="diseaseAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                Apple Scab
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#diseaseAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Cause:</strong> Fungus (Venturia inaequalis)</p>
+                                <p><strong>Symptoms:</strong> Olive-green to brown spots on leaves and fruits. Severe infections can cause defoliation and fruit drop.</p>
+                                <p><strong>Treatment:</strong> Apply fungicides in early spring. Prune infected branches and remove fallen leaves to reduce spore sources.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                Black Rot
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#diseaseAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Cause:</strong> Fungus (Botryosphaeria obtusa)</p>
+                                <p><strong>Symptoms:</strong> Circular lesions on leaves and rotting of fruits. Infected fruits eventually mummify and may remain attached to the tree.</p>
+                                <p><strong>Treatment:</strong> Remove and destroy infected plant parts. Apply appropriate fungicides during the growing season.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                Cedar Apple Rust
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#diseaseAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Cause:</strong> Fungus (Gymnosporangium juniperi-virginianae)</p>
+                                <p><strong>Symptoms:</strong> Bright orange-yellow spots on leaves and occasionally on fruit. Affected leaves may drop prematurely.</p>
+                                <p><strong>Treatment:</strong> Plant resistant apple varieties. Remove nearby cedar trees if possible. Apply fungicides in spring.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
